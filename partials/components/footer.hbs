@@ -31,6 +31,26 @@
                 </a>
             {{/if}}
         </div>
+        {{!--
+            Ghost core emits the built-in socials in a fixed canonical order and
+            can't interleave bespoke ones (e.g. GitHub). Sort the whole set
+            alphabetically by label at parse time — before first paint, so no
+            flash — with no per-social config, so any social added later sorts
+            itself. Degrades gracefully: with JS off the links still render.
+        --}}
+        <script>
+            (function () {
+                var box = document.currentScript.previousElementSibling;
+                if (!box) return;
+                Array.prototype.slice.call(box.children)
+                    .sort(function (a, b) {
+                        return (a.getAttribute('aria-label') || '').localeCompare(
+                            b.getAttribute('aria-label') || '', undefined, {sensitivity: 'base'}
+                        );
+                    })
+                    .forEach(function (el) { box.appendChild(el); });
+            })();
+        </script>
 
         <div class="gh-footer-bar">
             <span class="gh-footer-logo is-title">
