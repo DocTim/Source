@@ -1,0 +1,117 @@
+name: Sync upstream releases
+
+# Weekly check for a new TryGhost/Source release. If one exists that isn't yet
+# in timmassey-custom, merge it on a branch, rebuild, run gscan, and open a PR
+# for review. It never deploys — you review, then tag to ship.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: timmassey-custom
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Configure git and fetch upstream
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/TryGhost/Source.git
+          git fetch --tags --quiet upstream
+
+      - name: Find latest upstream release
+        id: up
+        run: |
+          TAG=$(git tag -l 'v*' --sort=-v:refname | grep -vE -- '-tm[0-9]+$' | head -1)
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if git merge-base --is-ancestor "$TAG" HEAD; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "Already contains $TAG — nothing to do."
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "New upstream release to sync: $TAG"
+          fi
+
+      - name: Check for an existing open PR
+        id: pr
+        if: steps.up.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="upstream-sync/${{ steps.up.outputs.tag }}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          COUNT=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          echo "exists=$COUNT" >> "$GITHUB_OUTPUT"
+          [ "$COUNT" != "0" ] && echo "A sync PR for ${{ steps.up.outputs.tag }} is already open." || true
+
+      - name: Merge, rebuild, validate
+        id: merge
+        if: steps.up.outputs.needed == 'true' && steps.pr.outputs.exists == '0'
+        run: |
+          set +e
+          git checkout -b "${{ steps.pr.outputs.branch }}"
+          git merge --no-edit "${{ steps.up.outputs.tag }}"
+          if [ $? -ne 0 ]; then
+            git add -A
+            git commit --no-verify -m "merge upstream ${{ steps.up.outputs.tag }} (CONFLICTS - resolve before merging)"
+            echo "status=conflicts" >> "$GITHUB_OUTPUT"
+            git push -f -u origin "${{ steps.pr.outputs.branch }}"
+            exit 0
+          fi
+          pnpm install
+          pnpm build
+          pnpm test:ci
+          GSCAN=$?
+          git add -A
+          git commit --no-verify -m "chore: rebuild assets after merging upstream ${{ steps.up.outputs.tag }}" || echo "no asset changes to commit"
+          if [ $GSCAN -eq 0 ]; then echo "status=clean" >> "$GITHUB_OUTPUT"; else echo "status=gscan-failed" >> "$GITHUB_OUTPUT"; fi
+          git push -f -u origin "${{ steps.pr.outputs.branch }}"
+
+      - name: Open pull request
+        if: steps.up.outputs.needed == 'true' && steps.pr.outputs.exists == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.up.outputs.tag }}
+          BRANCH: ${{ steps.pr.outputs.branch }}
+          STATUS: ${{ steps.merge.outputs.status }}
+        run: |
+          case "$STATUS" in
+            clean)        HEADLINE="Merged cleanly, assets rebuilt, gscan passed." ;;
+            gscan-failed) HEADLINE="Merged cleanly, but gscan FAILED - review before deploying." ;;
+            conflicts)    HEADLINE="Merge CONFLICTS - check out the sync branch, resolve, rebuild, and push." ;;
+          esac
+          STATIC=$(cat <<'EOF'
+          Automated by `.github/workflows/sync-upstream.yml` - a weekly check for new [TryGhost/Source](https://github.com/TryGhost/Source) releases. **This does not deploy.**
+
+          ### After you merge this PR
+          Pull `timmassey-custom`, then tag to ship to production:
+          ```bash
+          git pull
+          git tag __TAG__-tm1 && git push origin __TAG__-tm1
+          ```
+          EOF
+          )
+          BODY="${HEADLINE}
+
+          ${STATIC}"
+          BODY="${BODY//__TAG__/$TAG}"
+          printf '%s\n' "$BODY" > /tmp/pr-body.md
+          gh pr create --base timmassey-custom --head "$BRANCH" \
+            --title "Sync upstream $TAG" --body-file /tmp/pr-body.md
