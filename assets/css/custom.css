@@ -12,12 +12,19 @@
     padding-top: 80px;
 }
 
-/* 2. Bauhaus display font for the site title (header brand) ----------------
+/* 2. Bauhaus display font for the site title ------------------------------
    The theme sets the title font via `var(--gh-font-heading, var(--font-*))`
-   on `.is-title`. Overriding that variable on the logo element wins without a
-   specificity/!important battle, and works whatever the title_font setting is.
-   Font is declared in partials/typography/bauhaus.hbs and always preloaded. */
-.gh-navigation-logo {
+   on `.is-title`. Overriding that variable on each site-title element wins
+   without a specificity/!important battle, whatever the title_font setting is.
+   Applies to the header brand plus both footer site titles (the signup
+   heading and the footer-bar brand). Font is declared in
+   partials/typography/bauhaus.hbs and always preloaded. */
+.gh-navigation-logo,
+.gh-footer-signup-header,
+.gh-footer-logo {
     --gh-font-heading: "Bauhaus", var(--font-sans);
+}
+
+.gh-navigation-logo {
     letter-spacing: 0.01em;
 }
