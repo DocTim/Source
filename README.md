@@ -1,6 +1,31 @@
+# Source (`source-tm`) — Tim Massey's fork
+
+A customized fork of Ghost's official [Source](https://github.com/TryGhost/Source) theme. The theme is named `source-tm` because Ghost forbids overriding the built-in `source`.
+
+**Customizations** (isolated in [`assets/css/custom.css`](assets/css/custom.css) + [`partials/typography/bauhaus.hbs`](partials/typography/bauhaus.hbs), so upstream merges stay clean):
+- Bauhaus display font for every site title (header brand + both footer titles)
+- Extra headspace inside the accent-coloured footer block
+
+**Branches & deploy**
+- `timmassey-custom` holds the customizations (working branch); `main` tracks upstream.
+- Pushing a version tag deploys to production via GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)):
+  ```bash
+  pnpm build && git commit -am "…"
+  git tag v1.7.6-tm4 && git push origin v1.7.6-tm4
+  ```
+
+**Staying current with upstream**
+```bash
+git fetch upstream --tags
+git merge v1.7.7      # the next upstream release tag
+pnpm build
+```
+
+---
+
 # Source
 
-The default theme for [Ghost](http://github.com/tryghost/ghost/). This is the latest development version of Source! If you're just looking to download the latest release, head over to the [releases](https://github.com/TryGhost/Source/releases) page.
+Upstream docs follow. The default theme for [Ghost](http://github.com/tryghost/ghost/). If you're looking for the original, head to the upstream [releases](https://github.com/TryGhost/Source/releases) page.
 
 &nbsp;
 
