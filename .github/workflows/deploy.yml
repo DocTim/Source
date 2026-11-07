@@ -1,0 +1,28 @@
+name: Deploy theme to Ghost
+
+# Deploys the committed theme (including assets/built) to the production Ghost
+# site via the Admin API. Runs on pushes to the customization branch and can be
+# triggered manually. Requires two repo secrets:
+#   GHOST_ADMIN_API_URL  e.g. https://ghost.timmassey.online
+#   GHOST_ADMIN_API_KEY  Admin API key from a prod Custom Integration (id:secret)
+#
+# Note: deploy uses the committed assets/built/*, so run `pnpm build` and commit
+# before pushing. The build is validated separately by test.yml (gscan).
+
+on:
+  push:
+    branches: [timmassey-custom]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Deploy to Ghost
+        uses: TryGhost/action-deploy-theme@v2
+        with:
+          api-url: ${{ secrets.GHOST_ADMIN_API_URL }}
+          api-key: ${{ secrets.GHOST_ADMIN_API_KEY }}
