@@ -1,3 +1,7 @@
+/* timmassey customizations — inlined first; overrides use low-conflict
+   selectors and CSS-variable overrides so they win without !important. */
+@import "custom.css";
+
 /* Table of contents
 /* ------------------------------------------------------------
 

@@ -1,0 +1,23 @@
+/* =========================================================================
+   timmassey customizations — kept separate from upstream screen.css so that
+   merges from TryGhost/Source stay clean. Imported at the top of screen.css.
+   ========================================================================= */
+
+/* 1. Footer headspace -----------------------------------------------------
+   Stock Source gives the accent footer block no internal top padding, so the
+   site title sits flush to the top edge. Add breathing room inside the block.
+   Note: `.gh-outer` applies `padding: 0 …` to the footer, so this needs the
+   extra `.gh-outer` class to win on specificity (import is inlined at the top). */
+.gh-footer.gh-outer {
+    padding-top: 80px;
+}
+
+/* 2. Bauhaus display font for the site title (header brand) ----------------
+   The theme sets the title font via `var(--gh-font-heading, var(--font-*))`
+   on `.is-title`. Overriding that variable on the logo element wins without a
+   specificity/!important battle, and works whatever the title_font setting is.
+   Font is declared in partials/typography/bauhaus.hbs and always preloaded. */
+.gh-navigation-logo {
+    --gh-font-heading: "Bauhaus", var(--font-sans);
+    letter-spacing: 0.01em;
+}
