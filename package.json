@@ -1,6 +1,6 @@
 {
-    "name": "source",
-    "description": "A default theme for the Ghost publishing platform",
+    "name": "source-tm",
+    "description": "Tim Massey's customized fork of the Source theme",
     "demo": "https://source.ghost.io",
     "version": "1.7.6",
     "engines": {
