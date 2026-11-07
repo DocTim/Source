@@ -24,6 +24,12 @@
                     {{/undefined}}
                 </a>
             {{/social_accounts}}
+            {{!-- GitHub isn't a Ghost-core social account, so it's wired via a custom theme setting --}}
+            {{#if @custom.github_url}}
+                <a href="{{@custom.github_url}}" target="_blank" rel="noopener" aria-label="GitHub">
+                    {{> "icons/github"}}
+                </a>
+            {{/if}}
         </div>
 
         <div class="gh-footer-bar">
